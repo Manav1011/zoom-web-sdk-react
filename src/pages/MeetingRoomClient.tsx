@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, FileText } from 'lucide-react';
 import { useLocation } from "react-router-dom";
-import ZoomMtgEmbedded from "@zoom/meetingsdk/embedded";
+import { ZoomMtg } from "@zoom/meetingsdk";
 import showdown from 'showdown';
 
 // Dummy notification data
 
+
+ZoomMtg.preLoadWasm();
+ZoomMtg.prepareWebSDK();
+
 const MeetingRoom = () => {
   const location = useLocation();
-  const client = ZoomMtgEmbedded.createClient();
+  
   const meetingSDKRef = useRef<HTMLDivElement | null>(null); // Reference for the Zoom container
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [notifications, setNotifications] = useState([] as { id: number; time: string; message: string }[]);
@@ -59,40 +63,34 @@ const MeetingRoom = () => {
       return;
     }
     try {
-      await client.init({
-        zoomAppRoot: meetingSDKRef.current,
-        language: "en-US",
-        patchJsMedia: true,
-        leaveOnPageUnload: true,
-        customize:{
-
-          meeting:{
-            popper:{
-              placement:'top-start',
-              disableDraggable:false
-            }
-          },
-          video:{
-            viewSizes:{
-              default:{
-                height: height-150,
-                width: width,
-              }
-            }
-          }
-        }
-      });
-      await client.join({
-        signature: signature,
-        sdkKey: sdkKey,
-        meetingNumber: meetingNumber,
-        password: passWord,
-        userName: userName,
-        tk: '',
-        zak: zak,
-      });
-      console.log("Zoom meeting started successfully!");
-      connectToSocket()
+        ZoomMtg.init({
+            leaveUrl: "https://example.com/thanks-for-joining",
+            patchJsMedia: true,
+            leaveOnPageUnload: true,
+            success: (success: unknown) => {
+              console.log(success);
+              // can this be async?
+              ZoomMtg.join({
+                signature: signature,
+                sdkKey: sdkKey,
+                meetingNumber: meetingNumber,
+                passWord: passWord,
+                userName: userName,
+                tk: '',
+                zak: zak,
+                success: (success: unknown) => {
+                  console.log(success);
+                  connectToSocket();
+                },
+                error: (error: unknown) => {
+                  console.log(error);
+                },
+              });
+            },
+            error: (error: unknown) => {
+              console.log(error);
+            },
+          });
     } catch (error) {
       console.error("Error joining meeting:", error);
     }

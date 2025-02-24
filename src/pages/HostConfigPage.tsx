@@ -8,8 +8,7 @@ const HostConfiguration = () => {
     silenceDetectionTime: 10,
     questionType: "topic",
     meetingTopic: "",
-    meetingPassword: "",
-    userName:""
+    meetingPassword: ""
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,12 +32,10 @@ const HostConfiguration = () => {
           meetingTopic: config.meetingTopic,
           meetingPassword: config.meetingPassword,
           accessToken:accessToken,
-          userName:config.userName
         }),
       });
 
       const data = await response.json();
-      console.log(response)
       if (response.ok) {
         const meeting_url = data.meeting_url
         const meeting_id = data.meeting_id
@@ -54,10 +51,17 @@ const HostConfiguration = () => {
 
         navigate('/meeting-room', {
           
-          state: { meeting_url,meeting_id,userName,password, zak ,meetingTopic,questionType,silenceDetectionTime,signature,sdkKey}, // Pass data as state
+          state: { host:true,meeting_url,meeting_id,userName,password, zak ,meetingTopic,questionType,silenceDetectionTime,signature,sdkKey}, // Pass data as state
         });
       } else {
-        alert(`Error creating meeting: ${data.detail}`);
+        console.log(data);
+        let error = JSON.parse(data.detail.replace(/'/g, '"'))
+        if(error['code'] == 124){
+          // delete access token and redirect to the home page
+          localStorage.clear()
+          navigate('/')
+        }
+        alert(`Error creating meeting: ${error.message}`);
       }
     } catch (error) {
       console.error("Error creating meeting:", error);
@@ -73,18 +77,6 @@ const HostConfiguration = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Meeting Topic */}
           <div className="space-y-4">
-          <h2 className="text-lg font-semibold flex items-center">
-              <Type className="w-5 h-5 mr-2 text-blue-600" />
-              Username
-            </h2>
-            <input
-              type="text"
-              value={config.userName}
-              onChange={(e) => setConfig({ ...config, userName: e.target.value })}
-              placeholder="Enter meeting topic"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
             <h2 className="text-lg font-semibold flex items-center">
               <Type className="w-5 h-5 mr-2 text-blue-600" />
               Meeting Topic
@@ -146,7 +138,7 @@ const HostConfiguration = () => {
               <label className="flex items-center space-x-3">
                 <input
                   type="radio"
-                  value="topic"
+                  value="context"
                   checked={config.questionType === "topic"}
                   onChange={(e) => setConfig({ ...config, questionType: e.target.value })}
                   className="form-radio text-blue-600"
@@ -156,7 +148,7 @@ const HostConfiguration = () => {
               <label className="flex items-center space-x-3">
                 <input
                   type="radio"
-                  value="icebreaker"
+                  value="common"
                   checked={config.questionType === "icebreaker"}
                   onChange={(e) => setConfig({ ...config, questionType: e.target.value })}
                   className="form-radio text-blue-600"

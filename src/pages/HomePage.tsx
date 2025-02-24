@@ -6,10 +6,52 @@ const HomePage = () => {
   const navigate = useNavigate();
   const [meetingLink, setMeetingLink] = useState('');
 
-  const handleParticipantJoin = (e: React.FormEvent) => {
+  const handleParticipantJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     // Handle participant join logic here
-    console.log('Joining as participant with link:', meetingLink);
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) {
+      alert("User is not authenticated. Please log in.");
+      return;
+    }
+    try {
+      const response = await fetch("http://localhost:8000/join_meeting", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          joinUrl:meetingLink,
+          accessToken:accessToken,
+        }),
+      });
+
+      const data = await response.json();
+      console.log(data)
+      if (response.ok) {
+        const meeting_url = data.meeting_url
+        const meeting_id = data.meeting_id
+        const userName=data.userName
+        const password = data.password
+        const signature = data.signature
+        const sdkKey = data.sdkKey
+        navigate('/meeting-room', {
+          state: { host:false,meeting_url,meeting_id,userName,password, zak:'' ,meetingTopic:'',questionType:'',silenceDetectionTime:'',signature,sdkKey}, // Pass data as state
+        });
+      } else {
+        let error = JSON.parse(data.detail.replace(/'/g, '"'))
+        if(error['code'] == 124){
+          // delete access token and redirect to the home page
+          localStorage.clear()
+          navigate('/')
+        }
+        alert(`Error creating meeting: ${error.message}`);
+      }
+      
+    } catch (error) {
+      console.error("Error creating meeting:", error);
+      alert("Failed to create meeting.");
+    }
   };
 
   return (
