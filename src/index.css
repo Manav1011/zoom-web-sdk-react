@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+#messaging-element pre {
+    white-space: pre-wrap; /* Wrap text inside <pre> */
+    word-wrap: break-word; /* Ensure long words break */
+    overflow-wrap: break-word;
+  }
+  

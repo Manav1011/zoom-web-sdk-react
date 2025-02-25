@@ -3,10 +3,12 @@ import { MessageCircle, FileText } from 'lucide-react';
 import { useLocation } from "react-router-dom";
 import ZoomMtgEmbedded from "@zoom/meetingsdk/embedded";
 import showdown from 'showdown';
+import { useNavigate } from 'react-router-dom';
 
 // Dummy notification data
 
 const MeetingRoom = () => {
+  const navigate = useNavigate();
   const location = useLocation();
   const client = ZoomMtgEmbedded.createClient();
   const meetingSDKRef = useRef<HTMLDivElement | null>(null); // Reference for the Zoom container
@@ -40,6 +42,7 @@ const MeetingRoom = () => {
         console.log(signature, meeting_id, password, userName, zak)
         startMeeting(host,signature, meeting_id, password, userName, zak,clientHeight,clientWidth);
     }
+    // return () => cleanupResources();
   }, [host,meeting_url,meeting_id, userName, password, zak, meetingTopic, questionType, silenceDetectionTime, signature, sdkKey]);
 
 
@@ -98,8 +101,23 @@ const MeetingRoom = () => {
     }
   }
 
+  function cleanupResources() {
+    if (socket) {
+      socket.close();
+      setSocket(null);
+    }
+    ZoomMtgEmbedded.destroyClient();
+    window.removeEventListener("beforeunload", cleanupResources);
+    console.log("Resources cleaned up successfully!");
+  }
+
   useEffect(() => {
-    if(socket){
+    window.addEventListener("beforeunload", cleanupResources);
+  }, []);
+
+  useEffect(() => {
+    // if(socket){
+      if (!socket) return; // Prevent running if socket is not set
       const join_url=meeting_url
       const silence_duration=silenceDetectionTime
       const icebreaker_mode=questionType
@@ -113,7 +131,7 @@ const MeetingRoom = () => {
             user:'host',
             join_url:join_url,
             silence_duration:silence_duration,
-            icebreaker_mode: icebreaker_mode === 'common' ? 0 : 'context'
+            icebreaker_mode: icebreaker_mode
           }
           socket.send(JSON.stringify(message))
         }else{
@@ -138,7 +156,10 @@ const MeetingRoom = () => {
             addNotification(excercise_markdown)
           }
         }
-  
+        if(message['action'] == 'meeting_ended'){
+          cleanupResources();  // Call cleanup when the meeting ends
+          navigate('/')
+        }
         // document.getElementById('response').textContent = 'Server says: ' + event.data;
       });
   
@@ -150,11 +171,20 @@ const MeetingRoom = () => {
       // Event listener for when the WebSocket connection is closed
       socket.addEventListener('close', (event) => {
         console.log('WebSocket connection closed');
+        if(host == true){
+          client.endMeeting();
+        }else{
+          client.leaveMeeting();
+        }
+        cleanupResources();  // Call cleanup when the meeting ends
+        navigate('/')
       });
-    }
+    // }
   },[socket])
   async function connectToSocket(){
-    setSocket(new WebSocket('ws://localhost:8001'))
+    if (socket) socket.close();
+    const newSocket = new WebSocket('ws://localhost:8001');
+    setSocket(newSocket);
   }
 
   return (
@@ -203,7 +233,7 @@ const MeetingRoom = () => {
             notifications.map((notification) => (
               <div key={notification.id} className="bg-gray-50 rounded-lg p-4">
                 <div className="text-sm text-gray-500 mb-1">{notification.time}</div>
-                <div className="text-gray-700" dangerouslySetInnerHTML={{ __html: notification.message }}></div>
+                <div className="text-gray-700" id='messaging-element' dangerouslySetInnerHTML={{ __html: notification.message }}></div>
               </div>
             ))
           )}

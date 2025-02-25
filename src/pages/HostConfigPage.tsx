@@ -6,7 +6,7 @@ const HostConfiguration = () => {
   const navigate = useNavigate();
   const [config, setConfig] = useState({
     silenceDetectionTime: 10,
-    questionType: "topic",
+    questionType: "context",
     meetingTopic: "",
     meetingPassword: ""
   });
@@ -120,6 +120,7 @@ const HostConfiguration = () => {
               type="number"
               value={config.silenceDetectionTime}
               onChange={(e) =>
+
                 setConfig({ ...config, silenceDetectionTime: parseInt(e.target.value) })
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -139,7 +140,7 @@ const HostConfiguration = () => {
                 <input
                   type="radio"
                   value="context"
-                  checked={config.questionType === "topic"}
+                  checked={config.questionType === "context"}
                   onChange={(e) => setConfig({ ...config, questionType: e.target.value })}
                   className="form-radio text-blue-600"
                 />
@@ -149,7 +150,7 @@ const HostConfiguration = () => {
                 <input
                   type="radio"
                   value="common"
-                  checked={config.questionType === "icebreaker"}
+                  checked={config.questionType === "common"}
                   onChange={(e) => setConfig({ ...config, questionType: e.target.value })}
                   className="form-radio text-blue-600"
                 />
